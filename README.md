@@ -17,7 +17,7 @@ ao longo de 30 ciclos, ele:
 - busca módulos, sensores e alertas por prefixo com uma **trie**;
 - decodifica os códigos dos sensores entre hexadecimal, decimal e binário e calcula potência e
   resistência dos transceptores pela lei de Ohm;
-- termina com uma análise que aponta onde a comunicação falhou e o que inspecionar.
+- termina com uma análise que aponta onde a comunicação falhou e o que acompanhar.
 
 ## Arquivos
 

@@ -227,7 +227,7 @@ A regressão reduziu o erro médio de 1.43 ms para 1.21 ms nos ciclos de teste; 
   ciclo 16 | Suporte de Vida | latência 18.2 ms contra 2.0 ms previstos (erro de 89%)
   ciclo 15 | Centro de Controle | latência 7.6 ms contra 1.5 ms previstos (erro de 80%)
 
-Erros preocupantes com céu limpo (a poeira não explica; inspecionar o transceptor):
+Erros preocupantes com céu limpo (a poeira não explica):
  ciclo                    modulo  latencia_observada_ms  latencia_prevista_ms
      2                 Habitação                 18.118                   2.5
      4             Energia Solar                 19.406                   9.0
@@ -237,11 +237,15 @@ Erros preocupantes com céu limpo (a poeira não explica; inspecionar o transcep
     23           Energia Nuclear                 20.775                   7.0
     28 Logística e Armazenamento                 22.984                   6.0
     30            Suporte Médico                 18.746                   3.0
+Módulos que aparecem mais de uma vez: Energia Solar, Suporte Médico.
+Com 8 picos distribuídos ao acaso entre 12 módulos, a chance de algum módulo repetir é de 95%.
+Uma repetição, sozinha, ainda não separa defeito de coincidência.
 
 Recomendações:
   1. Na previsão de tempestade, reservar banda para os módulos vitais: são eles
      que congestionam quando a telemetria aumenta.
   2. Durante tempestades, agendar a comunicação local pela previsão do modelo de
      regressão; com céu limpo, a latência de projeto continua suficiente.
-  3. Inspecionar os transceptores listados acima antes que as rajadas virem falha.
+  3. Acompanhar os transceptores listados acima; o módulo que continuar acumulando
+     picos nos próximos ciclos, além do esperado pelo acaso, deve ser inspecionado.
   4. Toda decisão sugerida aqui passa pela equipe de operações antes de ser executada.

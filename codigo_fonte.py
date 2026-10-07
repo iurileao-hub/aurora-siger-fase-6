@@ -601,13 +601,22 @@ def eletrica_por_modulo(df: pd.DataFrame) -> pd.DataFrame:
 # SEÇÃO 7 - ANÁLISE FINAL
 # =============================================================================
 
+def chance_repeticao_por_acaso(eventos: int, modulos: int) -> float:
+    """Chance de algum módulo receber dois ou mais eventos sorteados ao acaso.
+
+    É o "paradoxo do aniversário": a chance de NENHUM repetir é
+    modulos x (modulos - 1) x ... dividido por modulos^eventos.
+    """
+    return 1 - math.perm(modulos, eventos) / modulos ** eventos
+
+
 def analise_final(df: pd.DataFrame, resultado: dict, alertas: list[dict]) -> dict:
     """Junta os principais números para apoiar a decisão da equipe de operações."""
     locais = df[df["enlace"] == "local"].dropna(subset=["latencia_observada_ms"])
     tempestade = locais["opacidade_tau"] > 1.0
 
     # Erros preocupantes com céu limpo não têm a poeira como explicação:
-    # são os candidatos naturais a inspeção do transceptor (manutenção preditiva).
+    # são os candidatos a acompanhamento do transceptor (manutenção preditiva).
     sem_explicacao = locais[(~tempestade) & (locais["avaliacao_erro"] == "preocupante")
                             & locais["acima_previsto"]]
 
@@ -623,6 +632,8 @@ def analise_final(df: pd.DataFrame, resultado: dict, alertas: list[dict]) -> dic
         "mais_urgentes": mais_urgentes,
         "inspecionar": sem_explicacao[["ciclo", "modulo", "latencia_observada_ms",
                                        "latencia_prevista_ms"]],
+        "chance_repeticao": chance_repeticao_por_acaso(len(sem_explicacao),
+                                                       locais["modulo"].nunique()),
         "subtensao_ciclos": sorted(df.loc[df["mensagem"].str.contains("subtensão"), "ciclo"].unique()),
     }
 
@@ -887,17 +898,25 @@ def tela_analise_final(df: pd.DataFrame, resultado: dict | None = None) -> None:
     print(f"\n{a['total_alertas']} alertas no período. Os três primeiros da fila:")
     for alerta in a["mais_urgentes"]:
         print(f"  ciclo {alerta['ciclo']:>2} | {alerta['modulo']} | {alerta['descricao']}")
-    print("\nErros preocupantes com céu limpo (a poeira não explica; inspecionar o transceptor):")
+    print("\nErros preocupantes com céu limpo (a poeira não explica):")
     if a["inspecionar"].empty:
         print("  nenhum")
     else:
         print(a["inspecionar"].to_string(index=False))
+        repetidos = a["inspecionar"]["modulo"].value_counts()
+        repetidos = repetidos[repetidos > 1]
+        if not repetidos.empty:
+            print(f"Módulos que aparecem mais de uma vez: {', '.join(repetidos.index)}.")
+        print(f"Com {len(a['inspecionar'])} picos distribuídos ao acaso entre 12 módulos, a chance de "
+              f"algum módulo repetir é de {a['chance_repeticao']:.0%}.")
+        print("Uma repetição, sozinha, ainda não separa defeito de coincidência.")
     print("\nRecomendações:")
     print("  1. Na previsão de tempestade, reservar banda para os módulos vitais: são eles")
     print("     que congestionam quando a telemetria aumenta.")
     print("  2. Durante tempestades, agendar a comunicação local pela previsão do modelo de")
     print("     regressão; com céu limpo, a latência de projeto continua suficiente.")
-    print("  3. Inspecionar os transceptores listados acima antes que as rajadas virem falha.")
+    print("  3. Acompanhar os transceptores listados acima; o módulo que continuar acumulando")
+    print("     picos nos próximos ciclos, além do esperado pelo acaso, deve ser inspecionado.")
     print("  4. Toda decisão sugerida aqui passa pela equipe de operações antes de ser executada.")
 
 

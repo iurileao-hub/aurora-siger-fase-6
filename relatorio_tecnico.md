@@ -445,11 +445,15 @@ mais com a poeira que os cabeados. Um cabo de reserva para os módulos que hoje 
 rádio reduziria o efeito das tempestades.
 
 **Manutenção preditiva.** Erros preocupantes com céu limpo não têm a poeira como explicação,
-e por isso o SCIC os separa como candidatos a inspeção. Energia Solar (ciclos 4 e 18) e
-Suporte Médico (ciclos 4 e 30) aparecem duas vezes cada nessa lista. Um transceptor que
-começa a falhar costuma dar sinais intermitentes antes de parar de vez, e inspecionar esses
-dois antes da próxima tempestade custa menos que perder o enlace de um módulo vital no meio
-dela.
+e por isso o SCIC os separa para acompanhamento. Energia Solar (ciclos 4 e 18) e Suporte
+Médico (ciclos 4 e 30) aparecem duas vezes cada nessa lista, e seria tentador concluir que os
+dois transceptores estão falhando. A conta não sustenta essa conclusão ainda. Com 8 picos
+distribuídos ao acaso entre 12 módulos, a chance de algum módulo aparecer duas vezes é de 95%
+(o mesmo raciocínio do "paradoxo do aniversário"), e o programa mostra esse número junto com a
+lista. Nos nossos dados simulados, inclusive, as rajadas são sorteadas sem relação com o
+módulo. Um transceptor que começa a falhar costuma dar sinais intermitentes antes de parar de
+vez, então a lista serve como ponto de partida: o sinal para inspecionar é um módulo que
+continue acumulando picos nos ciclos seguintes, numa frequência acima da que o acaso explica.
 
 **Redes inteligentes de comunicação e microrredes.** A subtensão apareceu só no ramo do
 barramento alimentado pelos painéis solares, e só nos ciclos 13 e 14, no pico da poeira. A
