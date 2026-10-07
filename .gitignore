@@ -1,0 +1,12 @@
+# Local, fora do repositório (decisão de Iúri, 2026-10-07)
+CLAUDE.md
+tests/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Artefatos de entrega
+*.zip
