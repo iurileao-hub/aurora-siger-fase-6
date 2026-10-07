@@ -82,8 +82,8 @@ Precisão numérica:
   número representável: 1.2e-10 ms em float64 e 0.0625 ms em float32.
   Menor latência local: 0.758 ms. Em float32 o passo é 6.0e-08 ms.
   O CSV guarda 3 casas: o arredondamento erra no máximo 0.0005 ms,
-  muito abaixo dos erros de previsão medidos. A imprecisão que importa aqui
-  vem do modelo e do sensor, não da representação em ponto flutuante.
+  muito abaixo dos erros de previsão medidos. Nos dados do SCIC, o erro que pesa
+  nas decisões vem do modelo e do sensor; o da representação é desprezível.
 
 ========================================================================
 5. MODELO DE PREVISÃO E MÉTRICAS
@@ -108,7 +108,7 @@ Como ler:
   - O RMSE (3.23 ms) é 2.7 vezes o MAE: poucos registros concentram erros grandes.
     São 4 rajadas de retransmissão (erro acima de 8 ms), que nenhuma variável do modelo anuncia.
   - Sem essas 4 rajadas, o R² sobe de 0.56 para 0.96 e o RMSE cai para 0.73 ms.
-    O R² mede o quanto da variação foi explicado, não se cada registro foi acertado.
+    O R² mede a fração da variação explicada; um registro isolado ainda pode errar muito.
 
 Gráfico salvo em graficos_ou_imagens/avaliacao_modelo.png
 
@@ -241,7 +241,7 @@ Erros preocupantes com céu limpo (a poeira não explica; inspecionar o transcep
 Recomendações:
   1. Na previsão de tempestade, reservar banda para os módulos vitais: são eles
      que congestionam quando a telemetria aumenta.
-  2. Usar o modelo de regressão, e não a latência de projeto, para agendar a
-     comunicação local durante tempestades.
+  2. Durante tempestades, agendar a comunicação local pela previsão do modelo de
+     regressão; com céu limpo, a latência de projeto continua suficiente.
   3. Inspecionar os transceptores listados acima antes que as rajadas virem falha.
   4. Toda decisão sugerida aqui passa pela equipe de operações antes de ser executada.

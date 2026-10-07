@@ -19,9 +19,9 @@ Repositório: <https://github.com/iurileao-hub/aurora-siger-fase-6>
 Uma mensagem enviada da Aurora Siger leva entre 3 e 22 minutos para chegar à Terra,
 conforme a posição dos dois planetas na órbita. Nos 30 ciclos que analisamos, a distância
 ficou entre 228 e 244 milhões de km, o que dá de 12 min 40 s a 13 min 34 s só de viagem
-da luz. Nenhuma pergunta feita à Terra volta em menos de 25 minutos. Isso muda o problema:
-a colônia precisa saber, por conta própria, quais enlaces estão degradados, qual alerta
-atender primeiro e quanto pode confiar nas próprias previsões.
+da luz. Nenhuma pergunta feita à Terra volta em menos de 25 minutos, então a colônia precisa
+saber por conta própria quais enlaces estão degradados, qual alerta atender primeiro e quanto
+pode confiar nas próprias previsões.
 
 O SCIC é o protótipo que faz esse acompanhamento. Ele lê as medições dos sensores de enlace
 dos 13 módulos da colônia (os mesmos das fases anteriores do projeto), compara a latência
@@ -56,9 +56,8 @@ São 13 módulos × 30 ciclos = 390 registros, com estes campos:
 
 O programa acrescenta, ao carregar, as colunas que se calculam a partir das outras: potência
 (P = V · I), resistência equivalente (R = V / I), erro absoluto, erro relativo e a avaliação
-do erro. Preferimos não gravar esses valores no CSV. Um número derivado salvo em arquivo vira
-uma segunda versão da verdade, e se alguém corrige a tensão de um registro a potência gravada
-fica errada sem que nada avise.
+do erro. Preferimos calcular esses valores na carga em vez de gravá-los no CSV: se alguém
+corrigir a tensão de um registro, uma potência gravada ficaria desatualizada sem nenhum aviso.
 
 ### 2.2 Como a base foi construída
 
@@ -157,9 +156,9 @@ conseguiria distinguir diferenças menores que 0,06 ms. Para os nossos erros, qu
 segundos, isso continua irrelevante, mas mostra que o mesmo tipo de dado pode servir bem a uma
 escala e não a outra.
 
-O CSV guarda três casas decimais, então o arredondamento erra no máximo 0,0005 ms. É um valor
-bem abaixo de qualquer erro de previsão que medimos. A conclusão desta seção é que, no SCIC, a
-imprecisão que pesa nas decisões vem do modelo e do sensor, e não da representação numérica.
+O CSV guarda três casas decimais, então o arredondamento erra no máximo 0,0005 ms, bem abaixo
+de qualquer erro de previsão que medimos. Nos dados do SCIC, o erro que pesa nas decisões vem
+do modelo e do sensor; o da representação numérica é desprezível.
 
 ## 4. Modelo de previsão e avaliação
 
@@ -180,6 +179,10 @@ testamos com os ciclos 23 a 30 (95 registros). Uma divisão aleatória misturari
 período no treino e no teste, e o modelo seria avaliado num cenário mais fácil que o real, em
 que sempre se prevê o futuro a partir do passado. Os ciclos de teste incluem a segunda
 tempestade, que o modelo não viu durante o treino.
+
+Não separamos um conjunto de validação. Ele serve para escolher hiperparâmetros ou comparar
+versões do modelo antes do teste final, e a regressão linear simples não tem hiperparâmetro: os
+coeficientes saem de uma fórmula fechada.
 
 A equação obtida foi:
 
@@ -226,14 +229,14 @@ ciclos de teste tem céu limpo.
 O segundo sinal está na distância entre MAE e RMSE. O RMSE é 2,7 vezes o MAE, o que indica
 que poucos registros concentram erros grandes. São quatro rajadas de retransmissão, com erro
 acima de 8 ms, que nenhuma das variáveis do modelo consegue anunciar. Sem esses quatro
-registros, o R² sobe de 0,56 para 0,96 e o RMSE cai para 0,73 ms. Ou seja, um R² de 0,56 não
-quer dizer que o modelo é ruim, e um R² de 0,96 também não quer dizer que ele é perfeito: as
-rajadas continuam acontecendo, e são justamente os momentos em que um erro de previsão mais
-atrapalha.
+registros, o R² sobe de 0,56 para 0,96 e o RMSE cai para 0,73 ms. Os dois valores de R²
+descrevem o mesmo modelo. O primeiro está deprimido por quatro registros; o segundo parece
+excelente porque esses registros foram retirados, e eles continuam acontecendo na operação
+real, justamente nos momentos em que um erro de previsão mais atrapalha.
 
 Há ainda um efeito do próprio método. A regressão linear minimiza a soma dos erros ao
 quadrado, então as rajadas do período de treino puxam a reta para cima. O gráfico mostra isso:
-com céu limpo, a curva do modelo fica cerca de 0,25 ms acima da observada, o que explica a
+com céu limpo, a curva do modelo fica cerca de 0,3 ms acima da observada, o que explica a
 pequena desvantagem dele nesses ciclos.
 
 ![Avaliação do modelo](graficos_ou_imagens/avaliacao_modelo.png)
@@ -273,10 +276,9 @@ O peso é 3 para módulos vitais, 2 para os de sustento e 1 para os de expansão
 de mais de 3 s no enlace com a Terra são críticos. Quando dois alertas empatam, o mais recente
 vem primeiro.
 
-Esse critério é uma escolha nossa, e deixamos isso registrado. Dar peso 3 ao Suporte de Vida e
-peso 1 ao Laboratório Científico é uma decisão sobre o que a colônia valoriza, e não uma
-conclusão tirada dos dados. A fórmula está escrita em uma linha do código e pode ser
-revista pela equipe de operações.
+Esse critério é uma escolha da equipe. Dar peso 3 ao Suporte de Vida e peso 1 ao Laboratório
+Científico expressa o que a colônia valoriza; os dados não decidem isso sozinhos. A fórmula
+está em uma linha do código (`_novo_alerta`) e pode ser revista pela equipe de operações.
 
 ### 5.3 Como o heap organiza os alertas
 
@@ -307,7 +309,8 @@ Numa lista sem ordem, inserir é imediato, mas achar o alerta mais urgente exige
 itens: com n alertas, são n − 1 comparações a cada retirada. Numa lista mantida em ordem,
 retirar é imediato, mas cada inserção pode exigir deslocar todos os itens. No heap, inserir e
 retirar percorrem no máximo a altura da árvore, que cresce com log₂(n). No pior caso, as duas
-operações custam O(log n) comparações, contra O(n) da lista.
+operações custam O(log n) comparações. Em qualquer lista, uma das duas operações custa O(n) no
+pior caso: a retirada, na lista sem ordem, ou a inserção, na lista ordenada.
 
 O programa conta as comparações para inserir todos os alertas e retirá-los em ordem:
 
@@ -339,8 +342,8 @@ teclado sem acentos encontra o que procura.
 Na trie, cada nível da árvore corresponde a uma letra. Chaves que começam igual compartilham o
 mesmo caminho, e só se separam onde passam a diferir. Para achar tudo que começa com um
 prefixo de m letras, a busca desce m nós e depois percorre apenas o galho abaixo do último
-deles. O tempo para chegar ao prefixo depende do tamanho do prefixo, e não do número de chaves
-cadastradas. Numa lista, seria preciso testar cada chave, uma por uma.
+deles. O tempo para chegar ao prefixo depende só do tamanho do prefixo; o número de chaves
+cadastradas não entra nessa conta. Numa lista, seria preciso testar as chaves uma por uma.
 
 Exemplos da execução:
 
@@ -390,20 +393,25 @@ o programa confere o resultado com as funções `int(..., 16)` e `bin()` do Pyth
 ### 7.3 Tensão, corrente e potência
 
 Com a tensão e a corrente medidas no transceptor, o SCIC calcula a potência (P = V · I) e a
-resistência equivalente do módulo vista pelo barramento (R = V / I, lei de Ohm). O transceptor
-do módulo Comunicações, que fala com a Terra, trabalha em média com 27,98 V e 3,57 A:
+resistência equivalente do módulo vista pelo barramento (R = V / I, pela lei de Ohm). A
+resistência equivalente é a de um resistor fixo que puxaria a mesma corrente com a mesma
+tensão. Como o transceptor regula a própria potência, ele não se comporta como um resistor
+fixo, e essa resistência muda quando a tensão muda (veja o exemplo da tempestade, abaixo). O
+transceptor do módulo Comunicações, que fala com a Terra, trabalha em média com 27,98 V e
+3,57 A:
 
 > P = 27,98 V × 3,57 A ≈ 99,9 W  R = 27,98 V / 3,57 A ≈ 7,84 Ω
 
-Os enlaces locais consomem entre 10 e 22 W. Somando todos os transceptores, a comunicação da
+Os enlaces locais consomem cerca de 10 a 22 W. Somando todos os transceptores, a comunicação da
 colônia gasta 6,66 kWh por sol, e o enlace com a Terra responde por 37% desse total.
 
 A tempestade deixa um efeito visível nos dados. No módulo Energia Solar, entre o ciclo 5
 (céu limpo) e o ciclo 13 (pico da poeira), a tensão caiu de 28,17 V para 25,93 V e a corrente
 subiu de 0,456 A para 0,480 A. A potência ficou praticamente a mesma (12,8 W e 12,4 W),
 porque o transceptor precisa dela para continuar transmitindo e compensa a tensão menor
-puxando mais corrente. Isso tem uma consequência prática: corrente maior aquece mais os cabos
-e exige mais da fonte, justamente no momento em que o ramo solar está mais fraco.
+puxando mais corrente. A resistência equivalente caiu de 61,8 Ω para 54,0 Ω no mesmo
+intervalo. Na prática, corrente maior aquece mais os cabos e exige mais da fonte, justamente
+quando o ramo solar está mais fraco.
 
 ## 8. Gerenciamento inteligente da comunicação
 
@@ -411,14 +419,13 @@ Esta seção parte do que o SCIC encontrou nos dados.
 
 **Sensores e medidores.** Todo o protótipo depende de um sensor de enlace por módulo. Sem a
 medição da latência, não haveria erro a calcular; sem tensão e corrente, a subtensão no ramo
-solar passaria despercebida até algum transceptor desligar. Numa colônia real, esses
-medidores seriam o primeiro investimento, porque toda decisão posterior depende deles.
+solar passaria despercebida até algum transceptor desligar.
 
 **Monitoramento contínuo e anomalias.** Das 18 leituras locais com latência preocupante acima
-do previsto, oito ocorreram com céu limpo, em ciclos isolados e módulos diferentes. Foram as rajadas de retransmissão. Uma
-verificação feita uma vez por semana provavelmente não pegaria nenhuma delas, porque no ciclo
-seguinte o enlace já tinha voltado ao normal. A anomalia só aparece quando cada leitura é
-comparada com o valor esperado no momento em que chega.
+do previsto, oito ocorreram com céu limpo, em ciclos isolados e módulos diferentes: foram as
+rajadas de retransmissão. Uma verificação semanal dificilmente pegaria alguma delas, porque no
+ciclo seguinte o enlace já tinha voltado ao normal. O SCIC as encontrou porque compara cada
+leitura com o valor esperado.
 
 **Automação para decisões rápidas.** Com 25 minutos de ida e volta até a Terra, a colônia não
 tem como esperar instrução para cada incidente. O heap deixa o alerta mais urgente sempre à
@@ -449,42 +456,40 @@ barramento alimentado pelos painéis solares, e só nos ciclos 13 e 14, no pico 
 opacidade, que prevê a degradação dos enlaces, também prevê a queda de geração solar. Numa
 microrrede, os dois sistemas compartilhariam essa informação: ao detectar o aumento da
 opacidade, a rede elétrica poderia transferir os transceptores do ramo solar para a fonte
-nuclear, enquanto a rede de comunicação redistribuiria a banda. A mesma leitura de sensor
-serviria às duas decisões.
+nuclear, enquanto a rede de comunicação redistribuiria a banda.
 
 ## 9. Reflexão social, cultural e sustentável
 
 **Comunicação eficiente também é economia de energia.** Os transceptores consomem 6,66 kWh
 por sol, e mais de um terço disso vai para o enlace com a Terra. Nas tempestades, quando a
 energia solar diminui, cada retransmissão desperdiçada pesa mais. Priorizar o que precisa ser
-transmitido, em vez de aumentar a potência de todos os enlaces, é a forma de manter a colônia
-comunicando sem consumir a reserva de que outros sistemas vão precisar.
+transmitido, em vez de aumentar a potência de todos os enlaces, mantém a comunicação da
+colônia sem gastar a reserva de energia de que outros sistemas vão precisar.
 
 **Aprender a ler o ambiente.** A etnoastronomia brasileira registra que povos Guarani usam o
 céu como calendário: para os Guarani do Sul, o surgimento da constelação da Ema ao anoitecer,
-em junho, marca o início do inverno (Afonso, 2006). É conhecimento construído por observação paciente e
-continuada do ambiente, transmitido entre gerações. O SCIC faz algo da mesma natureza quando
-usa a opacidade da atmosfera para antecipar a piora da comunicação. A diferença é que levamos
-30 ciclos de dados para chegar a uma regra que esses povos refinam há séculos. Respeitar esse
-tipo de conhecimento também significa reconhecer que a observação cuidadosa da natureza é uma
-forma de ciência.
+em junho, marca o início do inverno (Afonso, 2006). É conhecimento construído por observação
+continuada do ambiente e transmitido entre gerações. O SCIC segue um caminho parecido quando
+usa a opacidade da atmosfera para antecipar a piora da comunicação, com a diferença de que
+trabalhamos com 30 ciclos de dados e esses povos acumulam observações há muitas gerações.
+Para nós, a lição é tratar a observação cuidadosa do ambiente como fonte legítima de
+conhecimento, e não só os modelos matemáticos.
 
 **Diversidade e sistemas que não excluem.** O Censo de 2010 do IBGE contou 305 etnias
 indígenas e 274 línguas indígenas faladas no Brasil, e o próprio português do Brasil foi
-transformado pelo contato com essas línguas e com as línguas africanas (Abud, 2021). Uma colônia formada por pessoas de origens
-diferentes vai ter operadores que escrevem de jeitos diferentes. Um detalhe pequeno do SCIC
-vem dessa preocupação: a busca ignora acentos e maiúsculas, e por isso quem digita
-"comunicacoes" encontra o mesmo que quem digita "Comunicações". As mensagens do sistema
-descrevem o módulo e o evento em linguagem simples e nunca se referem a pessoas. Um sistema
-que só funciona para quem escreve de um jeito específico já começa excluindo alguém.
+transformado pelo contato com essas línguas e com as línguas africanas (Abud, 2021). Uma
+colônia formada por pessoas de origens diferentes vai ter operadores que escrevem de jeitos
+diferentes. Um detalhe pequeno do SCIC vem dessa preocupação: a busca ignora acentos e
+maiúsculas, e quem digita "comunicacoes" encontra o mesmo que quem digita "Comunicações". As
+mensagens do sistema descrevem o módulo e o evento em linguagem simples e nunca se referem a
+pessoas.
 
 **Transparência e responsabilidade humana.** Toda decisão do SCIC pode ser rastreada até a
 regra que a produziu. Cada alerta diz se veio do módulo ou do próprio SCIC, a fórmula de
-urgência cabe em uma linha e as limitações do modelo estão descritas aqui, com números. Isso
-foi intencional. A ordem da fila carrega um julgamento de valor (o peso maior dos módulos
-vitais) que foi feito por pessoas e pode ser contestado por pessoas. O SCIC ordena os alertas
-e sugere ações, e a equipe de operações decide o que fazer. Como lembrado na análise final do
-programa, nenhuma recomendação deveria ser executada sem passar por ela.
+urgência cabe em uma linha e as limitações do modelo estão descritas aqui, com números. A
+ordem da fila carrega um julgamento de valor, o peso maior dos módulos vitais, que a equipe de
+operações pode rever a qualquer momento. O SCIC ordena os alertas e sugere ações; a decisão de
+executá-las é da equipe, como a própria análise final do programa lembra.
 
 ## 10. Limitações e melhorias
 
@@ -516,7 +521,9 @@ programa, nenhuma recomendação deveria ser executada sem passar por ela.
 ## Referências
 
 - ABUD, Marcelo. Línguas indígenas e africanas enriquecem vocabulário do português
-  brasileiro. Instituto Claro, 2021.
+  brasileiro. [Podcast]. Instituto Claro, 28 abr. 2021. Disponível em:
+  <https://www.institutoclaro.org.br/educacao/nossas-novidades/podcasts/linguas-indigenas-e-africanas-enriquecem-vocabulario-do-portugues-brasileiro/>.
+  Acesso em: 7 out. 2026.
 - AFONSO, Germano Bruno. Mitos e estações no céu tupi-guarani. *Scientific American Brasil*,
   edição especial n. 14 (Etnoastronomia), p. 46-55, 2006.
 - IBGE. Censo Demográfico 2010: características gerais dos indígenas. Rio de Janeiro: IBGE, 2012.

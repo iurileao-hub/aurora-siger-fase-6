@@ -356,10 +356,14 @@ class HeapAlertas:
 
     def ver_mais_urgente(self) -> dict:
         """Consulta o topo sem remover."""
+        if not self.itens:
+            raise IndexError("não há alertas no heap")
         return self.itens[0]
 
     def remover_mais_urgente(self) -> dict:
         """Tira o topo, põe o último item no lugar e o faz descer (heapify-down)."""
+        if not self.itens:
+            raise IndexError("não há alertas no heap")
         self._trocar(0, len(self.itens) - 1)
         topo = self.itens.pop()
         if self.itens:
@@ -558,6 +562,8 @@ def hexadecimal_para_decimal(codigo: str) -> int:
     """Soma posicional: cada dígito vale digito x 16^posição."""
     digitos = "0123456789ABCDEF"
     texto = codigo.upper().removeprefix("0X")
+    if not texto:
+        raise ValueError("código vazio")
     valor = 0
     for posicao, digito in enumerate(reversed(texto)):
         valor += digitos.index(digito) * 16 ** posicao
@@ -650,15 +656,18 @@ def tela_cadastrar(df: pd.DataFrame) -> pd.DataFrame:
     for i, nome in enumerate(modulos, start=1):
         print(f"  {i:>2}. {nome}")
     try:
-        modulo = modulos[int(input("Número do módulo: ")) - 1]
+        numero = int(input("Número do módulo: "))
+        if not 1 <= numero <= len(modulos):
+            raise IndexError
+        modulo = modulos[numero - 1]
         ciclo = int(input("Ciclo (sol): "))
         carga = float(input("Carga da rede (%): "))
         tau = float(input("Opacidade da atmosfera (tau): "))
         tensao = float(input("Tensão no transceptor (V): "))
         corrente = float(input("Corrente no transceptor (A): "))
         latencia = float(input("Latência medida (ms): "))
-    except (ValueError, IndexError):
-        print("Entrada inválida. Nada foi cadastrado.")
+    except (ValueError, IndexError, EOFError):
+        print("\nEntrada inválida. Nada foi cadastrado.")
         return df
     df = cadastrar_registro(df, modulo, ciclo, carga, tau, tensao, corrente, latencia)
     novo = df.iloc[-1]
@@ -723,8 +732,8 @@ def tela_indicadores(df: pd.DataFrame) -> None:
           f"{pf['espaco_float32_local']:.1e} ms.")
     print(f"  O CSV guarda 3 casas: o arredondamento erra no máximo "
           f"{pf['erro_max_arredondamento_ms']} ms,")
-    print("  muito abaixo dos erros de previsão medidos. A imprecisão que importa aqui")
-    print("  vem do modelo e do sensor, não da representação em ponto flutuante.")
+    print("  muito abaixo dos erros de previsão medidos. Nos dados do SCIC, o erro que pesa")
+    print("  nas decisões vem do modelo e do sensor; o da representação é desprezível.")
 
 
 def tela_modelo(df: pd.DataFrame) -> dict:
@@ -758,7 +767,7 @@ def tela_modelo(df: pd.DataFrame) -> dict:
           "que nenhuma variável do modelo anuncia.")
     print(f"  - Sem essas {r['rajadas']} rajadas, o R² sobe de {m['R2']:.2f} para {limpo['R2']:.2f} "
           f"e o RMSE cai para {limpo['RMSE']:.2f} ms.")
-    print("    O R² mede o quanto da variação foi explicado, não se cada registro foi acertado.")
+    print("    O R² mede a fração da variação explicada; um registro isolado ainda pode errar muito.")
 
     caminho = salvar_grafico(df, r)
     print(f"\nGráfico salvo em {caminho.relative_to(PASTA)}")
@@ -835,12 +844,12 @@ def tela_dispositivos(df: pd.DataFrame, codigo: str | None = None) -> None:
     codigo = codigo or "0x2506"
     try:
         d = decodificar_codigo(codigo)
+        conferido = int(codigo, 16)  # a função pronta do Python, para comparar
     except ValueError:
         print("Código inválido: use até 4 dígitos hexadecimais, como 0x2506.")
         return
     print(f"\nCódigo {d['hexadecimal']} = {d['decimal']} em decimal = {d['binario']} em binário")
-    print(f"  conferência com as funções do Python: int = {int(codigo, 16)}, "
-          f"bin = {bin(int(codigo, 16))}")
+    print(f"  conferência com as funções do Python: int = {conferido}, bin = {bin(conferido)}")
     print(f"  bits 15-12 -> prioridade {d['prioridade']} | bits 11-8 -> tipo {d['tipo']} | "
           f"bits 7-0 -> módulo {d['id_modulo']}")
     dono = df.loc[df["codigo_sensor"].str.upper() == codigo.upper(), "modulo"]
@@ -886,8 +895,8 @@ def tela_analise_final(df: pd.DataFrame, resultado: dict | None = None) -> None:
     print("\nRecomendações:")
     print("  1. Na previsão de tempestade, reservar banda para os módulos vitais: são eles")
     print("     que congestionam quando a telemetria aumenta.")
-    print("  2. Usar o modelo de regressão, e não a latência de projeto, para agendar a")
-    print("     comunicação local durante tempestades.")
+    print("  2. Durante tempestades, agendar a comunicação local pela previsão do modelo de")
+    print("     regressão; com céu limpo, a latência de projeto continua suficiente.")
     print("  3. Inspecionar os transceptores listados acima antes que as rajadas virem falha.")
     print("  4. Toda decisão sugerida aqui passa pela equipe de operações antes de ser executada.")
 
@@ -913,26 +922,36 @@ def menu() -> None:
         if escolha == "0":
             print("Encerrando o SCIC.")
             break
-        if escolha == "1":
-            df = tela_carregar()
-        elif escolha == "2":
-            df = tela_cadastrar(df)
-        elif escolha == "3":
-            tela_consultar(df)
-        elif escolha == "4":
-            tela_indicadores(df)
-        elif escolha == "5":
-            resultado = tela_modelo(df)
-        elif escolha == "6":
-            tela_heap(df)
-        elif escolha == "7":
-            tela_trie(df)
-        elif escolha == "8":
-            tela_dispositivos(df)
-        elif escolha == "9":
-            tela_analise_final(df, resultado)
-        else:
-            print("Opção inválida.")
+        try:
+            df, resultado = executar_opcao(escolha, df, resultado)
+        except EOFError:  # entrada encerrada (Ctrl-D) no meio de uma opção
+            print("\nEntrada encerrada. Encerrando o SCIC.")
+            break
+
+
+def executar_opcao(escolha: str, df: pd.DataFrame, resultado: dict | None):
+    """Chama a tela da opção escolhida e devolve a base e o último modelo treinado."""
+    if escolha == "1":
+        df = tela_carregar()
+    elif escolha == "2":
+        df = tela_cadastrar(df)
+    elif escolha == "3":
+        tela_consultar(df)
+    elif escolha == "4":
+        tela_indicadores(df)
+    elif escolha == "5":
+        resultado = tela_modelo(df)
+    elif escolha == "6":
+        tela_heap(df)
+    elif escolha == "7":
+        tela_trie(df)
+    elif escolha == "8":
+        tela_dispositivos(df)
+    elif escolha == "9":
+        tela_analise_final(df, resultado)
+    else:
+        print("Opção inválida.")
+    return df, resultado
 
 
 def demonstracao() -> None:
