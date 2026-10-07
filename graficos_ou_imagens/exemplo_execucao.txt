@@ -1,0 +1,247 @@
+
+========================================================================
+1. CARREGAR DADOS
+========================================================================
+Arquivo: dados_aurora_siger.csv
+390 registros | 13 módulos | ciclos 1 a 30
+Leituras sem latência (manutenção ou sensor mudo): 5
+
+Status dos registros:
+status
+ativo         377
+alerta         10
+manutenção      3
+
+========================================================================
+3. CONSULTAR REGISTROS
+========================================================================
+30 registro(s):
+
+ ciclo       modulo status  latencia_prevista_ms  latencia_observada_ms erro_rel avaliacao_erro mensagem
+     1 Comunicações  ativo            762026.137             761859.465     0.0%      aceitável         
+     2 Comunicações  ativo            763860.740             763366.217     0.1%      aceitável         
+     3 Comunicações  ativo            765695.342             765689.303     0.0%      aceitável         
+     4 Comunicações  ativo            767529.945             767255.278     0.0%      aceitável         
+     5 Comunicações  ativo            769364.547             769049.956     0.0%      aceitável         
+     6 Comunicações  ativo            771199.150             771788.454     0.1%      aceitável         
+     7 Comunicações  ativo            773033.752             773461.006     0.1%      aceitável         
+     8 Comunicações  ativo            774868.355             774467.993     0.1%      aceitável         
+     9 Comunicações  ativo            776702.957             776594.375     0.0%      aceitável         
+    10 Comunicações  ativo            778537.560             778875.471     0.0%      aceitável         
+   ...          ...    ...                   ...                    ...      ...            ...      ...
+    21 Comunicações  ativo            798718.188             798472.770     0.0%      aceitável         
+    22 Comunicações  ativo            800552.790             800294.230     0.0%      aceitável         
+    23 Comunicações  ativo            802387.393             802711.952     0.0%      aceitável         
+    24 Comunicações  ativo            804221.995             804014.348     0.0%      aceitável         
+    25 Comunicações  ativo            806056.598             807740.242     0.2%        atenção         
+    26 Comunicações  ativo            807891.200             810396.376     0.3%    preocupante         
+    27 Comunicações  ativo            809725.803             811583.326     0.2%        atenção         
+    28 Comunicações  ativo            811560.405             811239.546     0.0%      aceitável         
+    29 Comunicações  ativo            813395.008             813319.847     0.0%      aceitável         
+    30 Comunicações  ativo            815229.610             815606.775     0.0%      aceitável         
+
+========================================================================
+4. INDICADORES E ERROS NUMÉRICOS
+========================================================================
+Indicadores por módulo (latência em ms; Comunicações é o enlace com a Terra):
+
+                            enlace  lat_media_ms  erro_abs_medio_ms  erro_rel_medio_pct  disponibilidade_pct  preocupantes  potencia_media_w
+modulo                                                                                                                                      
+Centro de Controle           local          1.98               0.75               28.74               100.00             6             22.00
+Suporte de Vida              local          2.92               1.16               24.16               100.00             6             18.09
+Habitação                    local          3.34               1.07               18.90               100.00             1             13.90
+Energia Solar                local         10.49               1.86               13.36               100.00             2             11.99
+Energia Nuclear              local          8.18               1.39               12.70               100.00             1             11.95
+Comunicações                 Terra     789176.92             779.49                0.10               100.00             4             99.92
+Suporte Médico               local          4.34               1.58               20.33               100.00             2             16.17
+Produção de Alimentos        local          5.71               0.47                8.05               100.00             0              9.88
+Logística e Armazenamento    local          6.65               1.08               10.94               100.00             1             10.02
+Extração de Recursos (ISRU)  local         12.04               1.55                9.77                96.67             1             13.88
+Oficina e Manutenção         local          8.75               1.02               10.12                96.67             0             10.12
+Laboratório Científico       local          4.70               0.40                8.31                96.67             0             19.91
+Energia Eólica               local         12.56               1.11                8.32                93.33             0             12.06
+
+Erro absoluto x erro relativo por tipo de enlace:
+
+        registros  erro_abs_medio_ms  erro_abs_max_ms  erro_rel_medio_pct  erro_rel_max_pct
+enlace                                                                                     
+Terra          30            779.488         3364.548               0.098             0.427
+local         355              1.121           17.820              14.553            97.889
+
+No enlace com a Terra o erro absoluto chega a segundos, mas o relativo fica
+abaixo de 1 %: o atraso é dominado pela distância. Nos enlaces locais o erro
+absoluto é de poucos milissegundos e mesmo assim pode passar de 50 %.
+Por isso o SCIC julga a Terra pelo erro absoluto (preocupante acima de 2.5 s)
+e os enlaces locais pelo relativo (preocupante acima de 50%).
+
+Avaliação dos registros: aceitável: 319, atenção: 42, preocupante: 24, sem leitura: 5
+
+Precisão numérica:
+  0.1 + 0.2 = 0.30000000000000004  (igual a 0.3? False; math.isclose? True)
+  Maior latência da Terra: 815606.775 ms. Distância até o próximo
+  número representável: 1.2e-10 ms em float64 e 0.0625 ms em float32.
+  Menor latência local: 0.758 ms. Em float32 o passo é 6.0e-08 ms.
+  O CSV guarda 3 casas: o arredondamento erra no máximo 0.0005 ms,
+  muito abaixo dos erros de previsão medidos. A imprecisão que importa aqui
+  vem do modelo e do sensor, não da representação em ponto flutuante.
+
+========================================================================
+5. MODELO DE PREVISÃO E MÉTRICAS
+========================================================================
+Regressão linear para a latência dos enlaces locais.
+Treino: ciclos 1 a 22 (260 registros). Teste: ciclos 23 a 30 (95 registros).
+
+latência = -0.822 +0.008 x carga_rede_pct +1.347 x opacidade_tau +1.027 x latencia_prevista_ms
+
+Desempenho nos ciclos de teste:
+                             MAE      MSE    RMSE      R²
+  previsão nominal         1.433   12.198   3.493   0.484
+  regressão linear         1.214   10.416   3.227   0.559
+
+MAE por condição do céu:
+  tempestade  (24 registros): nominal 2.47 ms | regressão 1.36 ms
+  céu limpo   (71 registros): nominal 1.08 ms | regressão 1.16 ms
+
+Como ler:
+  - Na média geral a regressão erra 1.21 ms (MAE), contra 1.43 ms da previsão de projeto.
+    O ganho está nas tempestades: com céu limpo a latência de projeto já basta.
+  - O RMSE (3.23 ms) é 2.7 vezes o MAE: poucos registros concentram erros grandes.
+    São 4 rajadas de retransmissão (erro acima de 8 ms), que nenhuma variável do modelo anuncia.
+  - Sem essas 4 rajadas, o R² sobe de 0.56 para 0.96 e o RMSE cai para 0.73 ms.
+    O R² mede o quanto da variação foi explicado, não se cada registro foi acertado.
+
+Gráfico salvo em graficos_ou_imagens/avaliacao_modelo.png
+
+========================================================================
+6. PRIORIZAÇÃO DE ALERTAS (HEAP)
+========================================================================
+32 alertas inseridos no heap (56 comparações).
+Urgência = peso do módulo (vital 3, sustento 2, expansão 1) x gravidade (alta 2, crítica 3).
+Empate: o alerta mais recente vem primeiro.
+
+Topo do heap (consulta sem remover): ciclo 30, Suporte Médico
+
+  # urg ciclo  módulo                      origem  descrição
+  1   9    30  Suporte Médico              SCIC    latência 18.7 ms contra 3.0 ms previstos (erro de 84%)
+  2   9    16  Suporte de Vida             SCIC    latência 18.2 ms contra 2.0 ms previstos (erro de 89%)
+  3   9    15  Centro de Controle          SCIC    latência 7.6 ms contra 1.5 ms previstos (erro de 80%)
+  4   9     4  Suporte Médico              SCIC    latência 16.7 ms contra 3.0 ms previstos (erro de 82%)
+  5   9     2  Habitação                   SCIC    latência 18.1 ms contra 2.5 ms previstos (erro de 86%)
+  6   6    27  Suporte de Vida             SCIC    latência 4.0 ms contra 2.0 ms previstos (erro de 50%)
+  7   6    26  Centro de Controle          SCIC    latência 3.3 ms contra 1.5 ms previstos (erro de 54%)
+  8   6    14  Produção de Alimentos       módulo  subtensão no barramento (25.8 V)
+  9   6    14  Centro de Controle          SCIC    latência 4.5 ms contra 1.5 ms previstos (erro de 66%)
+ 10   6    14  Suporte de Vida             SCIC    latência 5.1 ms contra 2.0 ms previstos (erro de 61%)
+
+Comparações para inserir todos os alertas e retirá-los em ordem de urgência:
+   alertas      heap   lista simples
+        32       226             496
+      1000     17712          499500
+     10000    247485        49995000
+No heap, inserir ou retirar percorre no máximo a altura da árvore, que cresce
+com log2(n). Na lista sem ordem, achar o mais urgente exige olhar todos os itens,
+então a diferença aumenta junto com o número de alertas.
+
+========================================================================
+7. BUSCA POR PREFIXO (TRIE)
+========================================================================
+Índice com 42 chaves: nomes de módulos, palavras dos nomes,
+códigos de sensores e categorias de alerta. Acentos e maiúsculas são ignorados.
+
+Prefixo: co
+  Comunicações
+      -> módulo Comunicações | sensor 0x2506 | prioridade 2
+  Controle
+      -> módulo Centro de Controle | sensor 0x1101 | prioridade 1
+
+Prefixo: 0x1
+  0x1101
+      -> sensor do módulo Centro de Controle
+  0x1202
+      -> sensor do módulo Suporte de Vida
+  0x1303
+      -> sensor do módulo Habitação
+  0x1607
+      -> sensor do módulo Suporte Médico
+
+Prefixo: subt
+  subtensão
+      -> ciclo 13 | Energia Solar | subtensão no barramento (25.9 V)
+      -> ciclo 13 | Produção de Alimentos | subtensão no barramento (25.9 V)
+      -> ciclo 13 | Oficina e Manutenção | subtensão no barramento (25.8 V)
+      -> ciclo 13 | Laboratório Científico | subtensão no barramento (25.9 V)
+      ... e mais 4
+
+Prefixo: cien
+  Científico
+      -> módulo Laboratório Científico | sensor 0x3B0C | prioridade 3
+
+========================================================================
+8. DISPOSITIVOS, BASES NUMÉRICAS E ELETRICIDADE
+========================================================================
+Entrada: um sensor de enlace em cada módulo mede latência, tensão e corrente do
+transceptor; neste protótipo o arquivo CSV faz o papel desses sensores.
+Saída: terminal (este menu), gráfico PNG e relatório.
+Interfaces: cabo no núcleo da base, rádio nos módulos afastados e antena de
+longa distância para a Terra (apenas conceituais neste protótipo).
+
+Código 0x2506 = 9478 em decimal = 0010 0101 0000 0110 em binário
+  conferência com as funções do Python: int = 9478, bin = 0b10010100000110
+  bits 15-12 -> prioridade 2 | bits 11-8 -> tipo 5 | bits 7-0 -> módulo 6
+  sensor do módulo Comunicações
+
+Eletricidade dos transceptores (médias dos 30 ciclos):
+P = V x I (potência) | R = V / I (resistência equivalente, lei de Ohm)
+
+                             tensao_v  corrente_a  potencia_w  resistencia_ohm  energia_wh_por_sol
+modulo                                                                                            
+Centro de Controle              27.96        0.79       22.00            35.55              542.62
+Suporte de Vida                 28.00        0.65       18.09            43.37              446.21
+Habitação                       28.00        0.50       13.90            56.48              342.77
+Energia Solar                   27.68        0.43       11.99            64.04              295.56
+Energia Nuclear                 28.00        0.43       11.95            65.79              294.57
+Comunicações                    27.98        3.57       99.92             7.84             2464.11
+Suporte Médico                  28.00        0.58       16.17            48.51              398.86
+Produção de Alimentos           27.60        0.36        9.88            77.31              243.69
+Logística e Armazenamento       28.00        0.36       10.02            78.61              246.98
+Extração de Recursos (ISRU)     27.96        0.50       13.88            56.45              342.22
+Oficina e Manutenção            27.66        0.37       10.12            75.87              249.53
+Laboratório Científico          27.66        0.72       19.91            38.46              491.01
+Energia Eólica                  27.96        0.43       12.06            64.93              297.44
+
+Energia Solar, ciclo 5 x ciclo 13 (tempestade): tensão 28.17 V -> 25.93 V,
+corrente 0.456 A -> 0.480 A, potência 12.8 W -> 12.4 W.
+A potência fica praticamente igual: quando a tensão cai, o transceptor puxa
+mais corrente para continuar transmitindo.
+Consumo total dos transceptores: 6.66 kWh por sol.
+
+========================================================================
+9. ANÁLISE FINAL
+========================================================================
+Latência média dos enlaces locais: 6.39 ms com céu limpo e 8.26 ms em tempestade.
+Subtensão no ramo solar apenas nos ciclos 13, 14, no pico da poeira.
+A regressão reduziu o erro médio de 1.43 ms para 1.21 ms nos ciclos de teste; nas tempestades, de 2.47 para 1.36 ms.
+
+32 alertas no período. Os três primeiros da fila:
+  ciclo 30 | Suporte Médico | latência 18.7 ms contra 3.0 ms previstos (erro de 84%)
+  ciclo 16 | Suporte de Vida | latência 18.2 ms contra 2.0 ms previstos (erro de 89%)
+  ciclo 15 | Centro de Controle | latência 7.6 ms contra 1.5 ms previstos (erro de 80%)
+
+Erros preocupantes com céu limpo (a poeira não explica; inspecionar o transceptor):
+ ciclo                    modulo  latencia_observada_ms  latencia_prevista_ms
+     2                 Habitação                 18.118                   2.5
+     4             Energia Solar                 19.406                   9.0
+     4            Suporte Médico                 16.666                   3.0
+    16           Suporte de Vida                 18.248                   2.0
+    18             Energia Solar                 23.114                   9.0
+    23           Energia Nuclear                 20.775                   7.0
+    28 Logística e Armazenamento                 22.984                   6.0
+    30            Suporte Médico                 18.746                   3.0
+
+Recomendações:
+  1. Na previsão de tempestade, reservar banda para os módulos vitais: são eles
+     que congestionam quando a telemetria aumenta.
+  2. Usar o modelo de regressão, e não a latência de projeto, para agendar a
+     comunicação local durante tempestades.
+  3. Inspecionar os transceptores listados acima antes que as rajadas virem falha.
+  4. Toda decisão sugerida aqui passa pela equipe de operações antes de ser executada.
