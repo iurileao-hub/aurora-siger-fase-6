@@ -630,8 +630,9 @@ def analise_final(df: pd.DataFrame, resultado: dict, alertas: list[dict]) -> dic
         "mae_regressao": resultado["regressao"]["MAE"],
         "total_alertas": len(alertas),
         "mais_urgentes": mais_urgentes,
-        "inspecionar": sem_explicacao[["ciclo", "modulo", "latencia_observada_ms",
-                                       "latencia_prevista_ms"]],
+        "acompanhar": sem_explicacao[["ciclo", "modulo", "latencia_observada_ms",
+                                      "latencia_prevista_ms"]],
+        "modulos_locais": locais["modulo"].nunique(),
         "chance_repeticao": chance_repeticao_por_acaso(len(sem_explicacao),
                                                        locais["modulo"].nunique()),
         "subtensao_ciclos": sorted(df.loc[df["mensagem"].str.contains("subtensão"), "ciclo"].unique()),
@@ -899,15 +900,15 @@ def tela_analise_final(df: pd.DataFrame, resultado: dict | None = None) -> None:
     for alerta in a["mais_urgentes"]:
         print(f"  ciclo {alerta['ciclo']:>2} | {alerta['modulo']} | {alerta['descricao']}")
     print("\nErros preocupantes com céu limpo (a poeira não explica):")
-    if a["inspecionar"].empty:
+    if a["acompanhar"].empty:
         print("  nenhum")
     else:
-        print(a["inspecionar"].to_string(index=False))
-        repetidos = a["inspecionar"]["modulo"].value_counts()
+        print(a["acompanhar"].to_string(index=False))
+        repetidos = a["acompanhar"]["modulo"].value_counts()
         repetidos = repetidos[repetidos > 1]
         if not repetidos.empty:
             print(f"Módulos que aparecem mais de uma vez: {', '.join(repetidos.index)}.")
-        print(f"Com {len(a['inspecionar'])} picos distribuídos ao acaso entre 12 módulos, a chance de "
+        print(f"Com {len(a['acompanhar'])} picos distribuídos ao acaso entre {a['modulos_locais']} módulos, a chance de "
               f"algum módulo repetir é de {a['chance_repeticao']:.0%}.")
         print("Uma repetição, sozinha, ainda não separa defeito de coincidência.")
     print("\nRecomendações:")
